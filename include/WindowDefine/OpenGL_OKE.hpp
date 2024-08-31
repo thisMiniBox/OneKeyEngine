@@ -3,9 +3,11 @@
 #ifdef __glad_h_
 #include"../Vector_OKE.hpp"
 #include<string>
+#include<iostream>
 #include <fstream>
 #include <sstream>
 #include<vector>
+#include<algorithm>
 
 namespace OneKeyEngine
 {
@@ -86,7 +88,7 @@ private:
 };
 
 
-Buffer::Buffer(const void* data,uint32_t bufferSize,BufferType type)
+inline Buffer::Buffer(const void* data,uint32_t bufferSize,BufferType type)
 {
     if(data&&bufferSize>0)
     {
@@ -135,7 +137,7 @@ inline void Buffer::set_causality(uint32_t index, uint32_t size, uint32_t stride
     // glBindVertexArray(0);
 }
 
-Element::Element()
+inline Element::Element()
 {
 }
 
@@ -162,7 +164,7 @@ inline void Element::update_element(const void *data, uint32_t bufferSize, uint3
     glBindVertexArray(0);
 }
 
-void LineStrip::setup_line_strip()
+inline void LineStrip::setup_line_strip()
 {
     // 创建VAO和VBO
     glGenVertexArrays(1, &VAO);
@@ -191,7 +193,7 @@ inline LineStrip::~LineStrip()
         glDeleteBuffers(1,&VBO);
     }
 }
-void LineStrip::draw(const ShaderGL &shader) const
+inline void LineStrip::draw(const ShaderGL &shader) const
 {
     // 使用传入的shader程序
     shader.use();
@@ -207,7 +209,7 @@ void LineStrip::draw(const ShaderGL &shader) const
 }
 
 
-ShaderGL::ShaderGL(const char* vertexPath, const char* fragmentPath,bool isCode)
+inline ShaderGL::ShaderGL(const char* vertexPath, const char* fragmentPath,bool isCode)
 {
     if (vertexPath && fragmentPath)
     {
@@ -222,7 +224,7 @@ ShaderGL::ShaderGL(const char* vertexPath, const char* fragmentPath,bool isCode)
     }
 }
 
-ShaderGL::~ShaderGL()
+inline ShaderGL::~ShaderGL()
 {
     delete_program();
 }

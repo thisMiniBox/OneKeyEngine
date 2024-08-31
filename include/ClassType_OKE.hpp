@@ -14,15 +14,13 @@ using ShaPtr = std::shared_ptr<T>;
 class ClassType_OKE
 {
 private:
-
+    virtual int define_virtual()
+    { 
+        return 0;
+    }
 public:
-    enum class DeviceSystem{
-        Unknown,
-        Windows,
-        Unix,
-        Apple,
-    };
-    virtual DeviceSystem get_device_system();
+
+
     template<typename DerivedClass>
     static DerivedClass* is_derived_class(ClassType_OKE* baseClass)
     {
@@ -34,19 +32,6 @@ public:
         return dynamic_cast<DerivedClass*>(this);
     }
 };
-ClassType_OKE::DeviceSystem ClassType_OKE::get_device_system()
-{
-    #if defined(_WIN32)
-        return ClassType_OKE::DeviceSystem::Windows;
-    #elif defined(__unix__) || defined(__unix) // All UNIX-like systems, including Linux
-        return ClassType_OKE::DeviceSystem::Unix;
-    #elif defined(__APPLE__)
-        return ClassType_OKE::DeviceSystem::Apple;
-    #else
-        return ClassType_OKE::DeviceSystem::Unknown;
-    #endif
-}
-
 
 }
 #endif

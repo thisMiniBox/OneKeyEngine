@@ -1,7 +1,10 @@
+#pragma once
 #ifndef __OKE_WINDOW_INPUT_H
 #define __OKE_WINDOW_INPUT_H
 
 #include"WindowDefine/Window_OKE.hpp"
+#include"scenes/EventManager.hpp"
+#include"WindowDefine/WindowGLFW.hpp"
 #include<unordered_map>
 #include<vector>
 #include<queue>
@@ -25,11 +28,23 @@ namespace OneKeyEngine
         static void key_up_monitor(WindowDefine::WindowBase *fromWho, KeyCode keyCode);
         static void mouse_wheel_callback(WindowDefine::WindowBase* window,float x,float y);
         static void char_input_callback(WindowDefine::WindowBase* window,uint32_t input);
+        static void mouse_move_callback(WindowDefine::WindowBase* window,float x,float y);
     public:
+        bool isGLFWWinodw=false;
         int bufferSize=1024;
+  
         WindowDefine::WindowCallback::KeyCallback keyDownCallback=nullptr,keyUpCallback=nullptr;
         WindowDefine::WindowCallback::MouseWheelCallback mouseWheelCallback=nullptr;
         WindowDefine::WindowCallback::InputCallback charInputCallback=nullptr;
+        WindowDefine::WindowCallback::MouseMoveCallback mouseMoveCallback=nullptr;
+
+        /// @brief 在事件发生时调用自定义回调
+        EventManager
+            keyDownEvent,
+            keyUpEvent,
+            mouseWheelEvent,
+            charInputEvent,
+            mouseMoveEvent;
 
         WindowInput(WindowDefine::WindowBase* aimWindow=nullptr);
         ~WindowInput();
@@ -67,8 +82,30 @@ namespace OneKeyEngine
             return;
         WindowInput *aimInput = f->second;
         aimInput->m_keyStates[keyCode] = 2;
-
+        if (aimInput->isGLFWWinodw)
+        {
+            switch (keyCode)
+            {
+            case KeyCode::LeftShift:
+            case KeyCode::RightShift:
+                key_down_monitor(fromWho, KeyCode::Shift);
+                break;
+            case KeyCode::LeftAlt:
+            case KeyCode::RightAlt:
+                key_down_monitor(fromWho, KeyCode::Alt);
+                break;
+            case KeyCode::LeftCtrl:
+            case KeyCode::RightCtrl:
+                key_down_monitor(fromWho, KeyCode::CTRL);
+                break;
+            default:
+                break;
+            }
+        }
+        else
+        {
 #ifdef _WIN32
+
         if (keyCode == KeyCode::Shift)
         {
             // 检查左右Shift键的状态
@@ -104,8 +141,10 @@ namespace OneKeyEngine
             }
         }
 #endif
+        }
         if(aimInput->keyDownCallback)
             aimInput->keyDownCallback(fromWho,keyCode);
+        //aimInput->keyDownCallback.call_all_void(fromWho,keyCode);
     }
 
     inline void WindowInput::key_up_monitor(WindowDefine::WindowBase *fromWho, KeyCode keyCode)
@@ -115,44 +154,70 @@ namespace OneKeyEngine
         WindowInput* aimInput=f->second;
         aimInput->m_keyStates[keyCode]=-1;
 
+        if (aimInput->isGLFWWinodw)
+        {
+            switch (keyCode)
+            {
+            case KeyCode::LeftShift:
+            case KeyCode::RightShift:
+                key_up_monitor(fromWho, KeyCode::Shift);
+                break;
+            case KeyCode::LeftAlt:
+            case KeyCode::RightAlt:
+                key_up_monitor(fromWho, KeyCode::Alt);
+                break;
+            case KeyCode::LeftCtrl:
+            case KeyCode::RightCtrl:
+                key_up_monitor(fromWho, KeyCode::CTRL);
+                break;
+            default:
+                break;
+            }
+        }
+        else
+        {
 #ifdef _WIN32
-        if (keyCode == KeyCode::Shift)
-        {
-            // 检查左右Shift键的状态
-            if (!(GetAsyncKeyState(VK_LSHIFT) & 0x8000))
+            if (keyCode == KeyCode::Shift)
             {
-                key_up_monitor(fromWho, KeyCode::LeftShift);
+                // 检查左右Shift键的状态
+                if (!(GetAsyncKeyState(VK_LSHIFT) & 0x8000))
+                {
+                    key_up_monitor(fromWho, KeyCode::LeftShift);
+                }
+                if (!(GetAsyncKeyState(VK_RSHIFT) & 0x8000))
+                {
+                    key_up_monitor(fromWho, KeyCode::RightShift);
+                }
             }
-            if (!(GetAsyncKeyState(VK_RSHIFT) & 0x8000))
+            else if (keyCode == KeyCode::CTRL)
             {
-                key_up_monitor(fromWho, KeyCode::RightShift);
+                if (!(GetAsyncKeyState(VK_LCONTROL) & 0x8000))
+                {
+                    key_down_monitor(fromWho, KeyCode::LeftCtrl);
+                }
+                if (!(GetAsyncKeyState(VK_RCONTROL) & 0x8000))
+                {
+                    key_down_monitor(fromWho, KeyCode::RightCtrl);
+                }
             }
-        }
-        else if (keyCode == KeyCode::CTRL)
-        {
-            if (!(GetAsyncKeyState(VK_LCONTROL) & 0x8000))
+            else if (keyCode == KeyCode::Alt)
             {
-                key_down_monitor(fromWho, KeyCode::LeftCtrl);
+                if (!(GetAsyncKeyState(VK_LMENU) & 0x8000))
+                {
+                    key_down_monitor(fromWho, KeyCode::LeftAlt);
+                }
+                if (!(GetAsyncKeyState(VK_RMENU) & 0x8000))
+                {
+                    key_down_monitor(fromWho, KeyCode::RightAlt);
+                }
             }
-            if (!(GetAsyncKeyState(VK_RCONTROL) & 0x8000))
-            {
-                key_down_monitor(fromWho, KeyCode::RightCtrl);
-            }
-        }
-        else if (keyCode == KeyCode::Alt)
-        {
-            if (!(GetAsyncKeyState(VK_LMENU) & 0x8000))
-            {
-                key_down_monitor(fromWho, KeyCode::LeftAlt);
-            }
-            if (!(GetAsyncKeyState(VK_RMENU) & 0x8000))
-            {
-                key_down_monitor(fromWho, KeyCode::RightAlt);
-            }
-        }
 #endif
+        }
+
         if (aimInput->keyUpCallback)
             aimInput->keyUpCallback(fromWho, keyCode);
+
+        //aimInput->keyUpCallback.call_all_void(fromWho,keyCode);
     }
 
     inline void WindowInput::mouse_wheel_callback(WindowDefine::WindowBase *window, float x, float y)
@@ -165,9 +230,9 @@ namespace OneKeyEngine
             aimInput->m_mouseWheel.x = x;
         if (y != 0)
             aimInput->m_mouseWheel.y = y;
-
-        if (aimInput->mouseWheelCallback)
-            aimInput->mouseWheelCallback(window, x,y);
+        if(aimInput->mouseWheelCallback)
+            aimInput->mouseWheelCallback(window,x,y);
+        //aimInput->mouseWheelCallback.call_all_void(window,x,y);
     }
 
     inline void WindowInput::char_input_callback(WindowDefine::WindowBase *window, uint32_t input)
@@ -190,16 +255,30 @@ namespace OneKeyEngine
             aimInput->m_charBuffer.pop();
         }
 #endif
+
         if(aimInput->charInputCallback)
             aimInput->charInputCallback(window,input);
+
+        //aimInput->charInputCallback.call_all_void(window,input);
     }
 
-    WindowInput::WindowInput(WindowDefine::WindowBase *aimWindow)
+    inline void WindowInput::mouse_move_callback(WindowDefine::WindowBase *window, float x, float y)
+    {
+        auto f = s_inputList.find(window);
+        if (f == s_inputList.end())
+            return;
+        WindowInput *aimInput = f->second;
+        if(aimInput->mouseMoveCallback)
+            aimInput->mouseMoveCallback(window,x,y);
+        aimInput->mouseMoveEvent.call_all_void();
+    }
+
+    inline WindowInput::WindowInput(WindowDefine::WindowBase *aimWindow)
     {
         set_window(aimWindow);
     }
 
-    WindowInput::~WindowInput()
+    inline WindowInput::~WindowInput()
     {
         set_window(nullptr);
     }
@@ -226,7 +305,13 @@ namespace OneKeyEngine
         m_window->set_key_up_callback(key_up_monitor);
         m_window->set_mouse_wheel_callback(mouse_wheel_callback);
         m_window->set_input_callback(char_input_callback);
-        s_inputList[aimWindow]=this;      
+        m_window->set_mouse_move_callback(mouse_move_callback);
+        s_inputList[aimWindow]=this;     
+
+        if(dynamic_cast<WindowDefine::WindowGL_GLFW*>(m_window))
+        {
+            isGLFWWinodw=true;
+        }
     }
     inline bool WindowInput::get_key(KeyCode keyCode)
     {
@@ -314,6 +399,7 @@ namespace OneKeyEngine
             m_charBuffer.pop();
         }
     }
+
 
     inline WindowInput *WindowInput::get_window_bind_input(WindowDefine::WindowBase *window)
     {

@@ -1,3 +1,4 @@
+#pragma once
 #ifndef __OKE_WINDOW_H
 #define __OKE_WINDOW_H
 
@@ -239,7 +240,7 @@ public:
     virtual bool in_focus() const;
 
     virtual void set_mouse_position(const VEC::Vec2&pos)=0;
-    virtual void set_mode(ModeType mode,ModeValue value)const=0;
+    virtual void set_mode(ModeType mode,ModeValue value=ModeValue::True)const=0;
 
     virtual bool set_clipboard_text(const std::string& str)const =0;
     virtual std::string get_clipboard_text()const =0;
@@ -262,6 +263,7 @@ public:
     VEC::Point current_coordinate_to_window_coordinate(float x,float y)const;
     VEC::Point current_coordinate_to_window_coordinate(const VEC::Vec2& point)const;
     VEC::Point current_coordinate_to_window_coordinate(const VEC::Vec3& point)const;
+
 };
 
 class Window2DBase:public WindowBase
@@ -391,7 +393,7 @@ inline int WindowBase::set_size(int width, int height) const
 {
     return set_size_(width,height);
 }
-int WindowBase::set_size(const VEC::Vector2<int> &size) const
+inline int WindowBase::set_size(const VEC::Vector2<int> &size) const
 {
     return set_size_(size.x,size.y);
 }

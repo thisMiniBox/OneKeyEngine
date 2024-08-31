@@ -13,8 +13,12 @@
 #include<cmath>
 #include<vector>
 #include <stdexcept>
+#include<iostream>
 
 #ifdef _WIN32
+#ifndef NOMINMAX
+#define NOMINMAX
+#endif
 #include<windows.h>
 #endif
 
@@ -126,6 +130,12 @@ public:
 	{
 		return other.x == x && other.y == y;
 	}
+
+    friend std::ostream & operator << (std::ostream &out,const Vector2 &s)
+    {
+        out<<"("<<s.x<<","<<s.y<<")";
+        return out;
+    }
 };
 
 /// @brief 3维向量
@@ -262,6 +272,13 @@ public:
 	{
 		return other.x == x && other.y == y && other.z == z;
 	}
+
+
+    friend std::ostream & operator << (std::ostream &out,const Vector3 &s)
+    {
+        out<<"("<<s.x<<","<<s.y<<","<<s.z<<")";
+        return out;
+    }
 };
 
 /// @brief 4维向量
@@ -395,6 +412,12 @@ public:
         w /= mul;
         return *this;
     }
+
+    friend std::ostream & operator << (std::ostream &out,const Vector4 &s)
+    {
+        out<<"("<<s.x<<","<<s.y<<","<<s.z<<","<<s.w<<")";
+        return out;
+    }
 };
 
 using Size=Vector2<int>;
@@ -435,15 +458,19 @@ public:
     }
     Color operator/(float m)const
     {
-        return Color(r/m,g/m,b/m,a/m);
+        return Color(r/m,g/m,b/m);
+    }
+    Color operator*(float m)const
+    {
+        return Color(r*m,g*m,b*m);
     }
     Color operator-(const Color &other) const
     {
-        return Color(r - other.r, g - other.g, b - other.b, a - other.a);
+        return Color(r - other.r, g - other.g, b - other.b);
     }
     Color operator+(const Color &other) const
     {
-        return Color(r + other.r, g + other.g, b + other.b, a + other.a);
+        return Color(r + other.r, g + other.g, b + other.b);
     }
     Color operator-() const
     {
@@ -951,6 +978,7 @@ public:
     bool is_child(Transform *aim) const;
     int get_child_id(Transform *child) const;
     void delete_child(Transform *child);
+    void delete_child(Transform& child);
 
     // 通过相对坐标计算绝对坐标
     VEC::Vec3 calculate_absolute_position(const VEC::Vec3 &relativePosition) const;
@@ -1247,202 +1275,6 @@ static glm::mat4x4 to_glm(const Mat4& vec) {
     return result;
 }
 #endif
-
-inline void Transform::set_world_position(const VEC::Vec3 &worldPosition)
-{
-    auto nowPos = get_world_position();
-    position += worldPosition - nowPos;
-}
-
-inline void Transform::set_parent(Transform &Parent)
-{
-    return set_parent(&Parent);
-}
-
-inline void Transform::set_parent(Transform *Parent)
-{
-    if (Parent)
-        Parent->set_child(this);
-}
-
-inline int Transform::get_childs_count() const
-{
-    return childs.size();
-}
-
-inline void Transform::set_child(Transform &child, int pos)
-{
-    set_child(&child, pos);
-}
-
-inline void Transform::set_child(Transform *child, int pos)
-{
-    if (!child)
-        return;
-    if (pos < 0)
-    {
-        pos += childs.size() + 1;
-    }
-    if (pos > childs.size())
-    {
-        set_child(child, -1);
-    }
-    auto p = childs.begin() + pos;
-    childs.insert(p, child);
-    if (child->parent)
-    {
-        child->parent->delete_child(child);
-    }
-    child->parent = this;
-}
-
-inline Transform *Transform::get_child(int id) const
-{
-    if (id < childs.size())
-    {
-        return childs[id];
-    }
-    return nullptr;
-}
-
-inline Transform *Transform::get_parent() const
-{
-    return parent;
-}
-
-inline bool Transform::is_child(Transform *aim) const
-{
-    for (auto T : childs)
-    {
-        if (T == aim)
-            return true;
-    }
-    return false;
-}
-
-inline int Transform::get_child_id(Transform *child) const
-{
-    for (int i = 0; i < childs.size(); ++i)
-    {
-        if (childs[i] == child)
-            return i;
-    }
-    return -1;
-}
-
-inline void Transform::delete_child(Transform *child)
-{
-    int id = get_child_id(child);
-    childs.erase(childs.begin() + id);
-}
-inline VEC::Vec3 Transform::calculate_absolute_position(const VEC::Vec3 &relativePosition) const
-{
-    auto mat = to_world_matrix();
-    auto result = mat * Vec4(relativePosition, 1.0f);
-    return Vec3(result.x, result.y, result.z);
-
-    // VEC::Vec3 scaledRelativePosition(relativePosition.x * scale.x, relativePosition.y * scale.y, relativePosition.z * scale.z);
-    // VEC::Quaternion rotatedPoint = rotation * VEC::Quaternion(0, scaledRelativePosition.x, scaledRelativePosition.y, scaledRelativePosition.z) * rotation.conjugate();
-    // VEC::Vec3 absolutePosition(position.x + rotatedPoint.x, position.y + rotatedPoint.y, position.z + rotatedPoint.z);
-
-    // if(parent)
-    // {
-    //     return parent->calculate_absolute_position(absolutePosition);
-    // }
-    // return absolutePosition;
-}
-
-inline VEC::Vec3 Transform::calculate_parent_relative_position(const VEC::Vec3 &relativePosition) const
-{
-    VEC::Vec3 scaledRelativePosition(relativePosition.x * scale.x, relativePosition.y * scale.y, relativePosition.z * scale.z);
-    VEC::Quaternion rotatedPoint = rotation * VEC::Quaternion(0, scaledRelativePosition.x, scaledRelativePosition.y, scaledRelativePosition.z) * rotation.conjugate();
-    VEC::Vec3 absolutePosition(position.x + rotatedPoint.x, position.y + rotatedPoint.y, position.z + rotatedPoint.z);
-    return absolutePosition;
-}
-inline VEC::Vec3 Transform::calculate_relative_position(const VEC::Vec3 &absolutePosition) const
-{
-    VEC::Vec3 relativePosition = absolutePosition;
-
-    if (parent)
-    {
-        relativePosition = parent->calculate_relative_position(absolutePosition);
-    }
-
-    relativePosition.x -= position.x;
-    relativePosition.y -= position.y;
-    relativePosition.z -= position.z;
-
-    VEC::Quaternion rotatedPoint(0, relativePosition.x, relativePosition.y, relativePosition.z);
-    VEC::Quaternion inverseRotation = rotation.conjugate();
-    rotatedPoint = inverseRotation * rotatedPoint * rotation;
-
-    relativePosition.x = rotatedPoint.x / scale.x;
-    relativePosition.y = rotatedPoint.y / scale.y;
-    relativePosition.z = rotatedPoint.z / scale.z;
-
-    return relativePosition;
-}
-
-inline Mat4 Transform::to_local_matrix() const
-{
-    // glm::mat4 res(1.0f);
-    // res = glm::scale(res, to_glm(scale));
-    // res*=glm::mat4_cast(glm::quat(rotation.w,rotation.x,rotation.y,rotation.z));
-    // //res = glm::rotate(res, rotation.w, glm::vec3(rotation.x, rotation.y, rotation.z));
-    // res = glm::translate(res, to_glm(position));
-    // return res;
-
-    auto result = Mat4::unit_matrix();
-
-    result = Mat4::translate(result, position);
-    result = Mat4::rotate(result, rotation);
-    result = Mat4::scale(result, scale);
-    // auto sc= glm::scale(to_glm(result),to_glm(scale));
-    // return Mat4(sc);
-    return result;
-}
-
-inline Mat4 Transform::to_world_matrix() const
-{
-    if (parent)
-    {
-        return parent->to_world_matrix() * to_local_matrix();
-    }
-    return to_local_matrix();
-}
-
-
-Transform::Transform() : position(0, 0, 0), rotation(1, 0, 0, 0), scale(1, 1, 1) {}
-inline Transform::Transform(const VEC::Vec3 &pos, const VEC::Vec3 &scale, const VEC::Quaternion &rot, Transform *parent_) : position(pos), scale(scale), rotation(rot), parent(parent_)
-{
-}
-inline void Transform::translate(const VEC::Vec3 &translation)
-{
-    position.x += translation.x;
-    position.y += translation.y;
-    position.z += translation.z;
-}
-inline void Transform::rotate(const VEC::Quaternion &deltaRotation)
-{
-    rotation = rotation * deltaRotation;
-}
-inline void Transform::rotate(const VEC::Vec3 &axis, float radian)
-{
-    rotate(VEC::Quaternion(axis,radian));
-}
-inline void Transform::scaleBy(const VEC::Vec3 &scaleFactor)
-{
-    scale.x *= scaleFactor.x;
-    scale.y *= scaleFactor.y;
-    scale.z *= scaleFactor.z;
-}
-inline VEC::Vec3 Transform::get_world_position() const
-{
-    if (parent == nullptr)
-        return position;
-    return position + parent->get_world_position();
-}
-
 
 
 } // namespace VEC

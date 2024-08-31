@@ -1,6 +1,6 @@
 #pragma once
 #ifndef __OKE_STYLE_H
-#define __OKE_STYLE_H
+#define __OKE_STYLE_HF
 
 #include"Vector_OKE.hpp"
 
@@ -9,8 +9,16 @@
 #include <cstdint>
 #include <codecvt>
 #ifdef _WIN32
+
+#ifndef NOMINMAX
+#define NOMINMAX
+#endif
 #include<windows.h>
 #endif
+#include<glad/glad.h>
+#include<functional>
+#include <codecvt>
+#include<memory>
 
 namespace OneKeyEngine
 {
@@ -126,11 +134,7 @@ static char32_t utf8_decode(const char* s,char** next=nullptr) {
 
     return codepoint;
 }
-static std::string utf8_encode(char32_t c)
-{
-    std::wstring_convert<std::codecvt_utf8<char32_t>, char32_t> convert;
-    return convert.to_bytes(c);
-}
+
 enum class CoordinateStyle
 {
     NormalizedDeviceCoordinates,
@@ -153,6 +157,9 @@ enum class ModeType
 {
     ShowCursor,
     CaptureCursor,
+    MaxWindow,
+    MinWindow,
+    FullScreen,
 };
 enum class ModeValue
 {
@@ -173,16 +180,12 @@ enum class KeyCode
     Claer = 0x0C,
     Enter = 0x0D,
     Shift = 0x10,
-
     CTRL = 0x11,
-
     Alt = 0x12,
-
     Pause = 0x13,//
     Capital = 0x14,
     Escape=0x1B,
     Space = 0x20,
-
     PageUp = 0x21,
     PageDown = 0x22,
     End = 0x23,
@@ -198,7 +201,6 @@ enum class KeyCode
     Insert = 0x2D,
     Delete = 0x2E,
     Help = 0x2F,
-
     A0 = 0x30,
     A1,
     A2,
@@ -209,7 +211,6 @@ enum class KeyCode
     A7,
     A8,
     A9,
-
     A = 0x41,
     B,
     C,
@@ -236,11 +237,9 @@ enum class KeyCode
     X,
     Y,
     Z,
-
     LeftWin = 0x5B,
     RightWin = 0x5C,
     Apps = 0x5D,
-
     Sleep = 0x5F,
     Numpad0 = 0x60,
     Numpad1 = 0x61,
@@ -252,14 +251,12 @@ enum class KeyCode
     Numpad7 = 0x67,
     Numpad8 = 0x68,
     Numpad9 = 0x69,
-
     Multiple = 0x6A,
     Add = 0x6B,
     Separator = 0x6C,
     Subtract = 0x6D,
     Dcimal = 0x6E,
     Divide = 0x6F,
-
     F1 = 0x70,
     F2,
     F3,
@@ -284,7 +281,6 @@ enum class KeyCode
     F22,
     F23,
     F24,
-
     LeftShift = 0xA0,
     RightShift,
     LeftCtrl,
@@ -296,12 +292,15 @@ enum class KeyCode
 enum class WindowCreateResult
 {
     WCR_SUCCESS = 0,
-    WCR_FALSE = -1,
-    WCR_PARAMETER_ERROR = -2,
-    WCR_WINDOW_CREATED = -3,
+    WCR_FALSE,
+    WCR_PARAMETER_ERROR,
+    WCR_WINDOW_CREATED,
+    WCR_GLAD_INIT_FAILED,
 
-    WCR_WIN32_WINODW_CLASS_REGISTRATION_FAILED = -4,
-    WCR_WIN32_WINDOW_CREATE_FAILED = -5,
+    WCR_WIN32_WINODW_CLASS_REGISTRATION_FAILED,
+    WCR_WINDOW_CREATE_FAILED,
+
+    WCR_NONSUPPORT,
 };
 enum class WindowDrawResult
 {
@@ -318,6 +317,8 @@ enum class WindowDrawResult
 
     WDR_OPENGL_BUFFER_CREATE_FAILED,
     WDR_OPENGL_CONTEXT_UNAVAILABLE,
+
+    WDR_NONSUPPORT,
 };
 /// @brief 通过系统方式读取（大端和小端的字节序）
 /// @tparam DataType 
@@ -514,11 +515,11 @@ static int key_code_to_win32_virtual_key(KeyCode keyCode)
 {
     return (int)keyCode;
 }
-LineStyle::~LineStyle()
+inline LineStyle::~LineStyle()
 {
     delete[] spacing;
 }
-void LineStyle::set_spacing(float* data,int size)
+inline void LineStyle::set_spacing(float* data,int size)
 {
     if(spacing!=nullptr)
     {
@@ -530,8 +531,6 @@ void LineStyle::set_spacing(float* data,int size)
         spacing[i]=data[i];
     }
 }
-
-
 
 }// namespace OneKeyEngine
 
@@ -589,6 +588,8 @@ namespace Enhancement
         std::unordered_map<Font, HFONT> font_cache;
     };
 #endif
+
+
 } // namespace enhancement
 } // namespace OneKeyEngine
 
